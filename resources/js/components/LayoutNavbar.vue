@@ -2,7 +2,7 @@
     <nav class="bg-blue-600 text-white p-4">
         <div class="container mx-auto flex items-center gap-4">
             <!-- Logo -->
-            <div class="text-xl font-bold">MyApp</div>
+            <div class="text-xl font-bold">siskeudes</div>
 
             <!-- Desktop Menu -->
             <ul class="hidden md:flex space-x-6">
