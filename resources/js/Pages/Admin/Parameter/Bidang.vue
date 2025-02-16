@@ -1,0 +1,164 @@
+<template>
+    <Card :title="'Bidang'">
+        <form @submit.prevent="submit" class="py-2">
+            <Alert
+                v-for="(alert, index) in alerts"
+                :key="index"
+                :message="alert.message"
+                :type="alert.type"
+                :duration="2000"
+                :closable="true"
+            />
+            <div class="mb-2 flex">
+                <label class="w-2/12">Kode Bidang</label>
+                <input v-model="data.kode_bidang" ref="kode_bidang" type="text" class="border px-2 py-1" required :disabled="disable" tabindex="-1"/>
+            </div>
+            <div class="mb-2 flex">
+                <label class="w-2/12">Nama Kecamatan</label>
+                <input v-model="data.nama" type="text" class="border px-2 py-1 w-8/12" :disabled="disable"/>
+            </div>
+
+            <button type="button" class="bg-blue-500 text-white px-4 py-2 mr-2" v-if="disable" @click="tambah">Tambah</button>
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 mr-2" v-if="!disable">{{  data.mode }}</button>
+            <button type="button" class="bg-slate-400 text-white px-4 py-2 mr-2" v-if="!disable" @click="batal">Batal</button>
+            
+        </form>
+
+
+        <table class="border w-full">
+            <thead>
+                <tr>
+                    <th class="border px-2 py-2" width="10%">Kode</th>
+                    <th class="border px-2 py-2" width="70%">Bidang</th>
+                    <th class="border px-2 py-2" width="20%">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in datas" :key="item.kode_gabung">
+                    <td class="border px-2 py-1">{{ item.kode_gabung }}</td>
+                    <td class="border px-2 py-1">{{ item.nama }}</td>
+                    <td class="border px-2 py-1">
+                        <a class="inline-block bg-blue-400 px-2 hover:bg-blue-600 py-1 mr-2" :href="`/parameter/subbidang/${item.kode_bidang}`">Sub Bidang</a>
+                        <a class="inline-block bg-slate-400 px-2 hover:bg-slate-600 py-1 mr-2" href="#" @click.prevent="edit(item)">Edit</a>
+                        <a class="inline-block bg-red-400 px-2 hover:bg-red-600 py-1 mr-2" href="#" @click.prevent="remove(item)">Hapus</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </Card>
+</template>
+
+<script>
+import LayoutDashboard from '@/components/LayoutDashboard.vue'
+import SubMenuParameter from '@/components/SubMenuParameter.vue'
+import Card from '@/components/Card.vue'
+import Alert from '@/components/Alert.vue'
+import { objectToFormData } from "@/utils/objectToFormdata.js"; // Import helper
+import { ref } from "vue";
+
+import axios from 'axios';
+
+export default {
+    components: {
+        LayoutDashboard,
+        SubMenuParameter,
+        Card,
+        Alert,
+    },
+    data() {
+        return {
+            disable: true,
+            datas: [],
+            data: {
+                kode_bidang: null,
+                kode_gabung: null,
+                nama: null,
+                mode: 'create',
+            },
+            alerts: [],
+        };
+    },
+    created() {
+    },
+    mounted() {
+        this.loadData();
+    },
+    methods: {
+        tambah() {
+            // const inputRef = ref(null);
+            this.disable = false;
+            this.data.mode = 'create';
+            this.$nextTick(() => {
+                this.$refs.kode_bidang.focus();
+            });
+        },
+        edit(item) {
+            this.data.kode_bidang = item.kode_bidang;
+            this.data.nama = item.nama;
+            this.data.kode_gabung = item.kode_gabung;
+            this.data.mode = 'update';
+            this.disable = false;
+            this.$nextTick(() => {
+                this.$refs.kode_bidang.focus();
+            });
+        },
+        batal() {
+            this.disable = true;
+            this.data.kode_bidang = null;
+            this.data.nama = null;
+            // this.loadData();
+        },
+        async loadData() {
+            try {
+                const response = await axios.get(`/admin/parameter/bidang`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                this.datas = response.data.datas;
+            } catch (error) {
+                console.error(error);
+            }
+        },
+        async submit() {
+            const formData = objectToFormData(this.data);
+
+            try {
+                const response = await axios.post(`/admin/parameter/bidang/save`, formData, {
+                    "Content-Type": "multipart/form-data",
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });                
+                this.loadData();
+                this.data.kode_bidang = null;
+                this.data.nama = null;
+                this.alerts.push({message: 'Data berhasil disimpan', type: 'success'});
+            } catch (error) {
+                this.alerts.push({message: error.response.data.message, type: 'error'});
+            }
+            
+            this.disable = true;
+        },
+        async remove(item) {
+            if (confirm("Anda yakin")) {
+                try {
+                    await axios.delete(`/admin/parameter/bidang/remove/${item.kode_gabung}`, {
+                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    this.loadData();
+                    this.alerts.push({message: 'Data berhasil dihapus', type:'success'});
+                } catch (error) {
+                    this.alerts.push({message: error.response.data.message, type: 'error'});
+                }
+            }
+        },  
+    }
+    // methods: {
+    //     logout() {
+    //         axios.post('http://localhost:8000/api/logout', {}, {
+    //             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    //         }).then(() => {
+    //             localStorage.removeItem('token');
+    //             this.$router.push('/login');
+    //         });
+    //     }
+    // }
+};
+</script>
